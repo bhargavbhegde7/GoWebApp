@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt" // to be removed
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -18,7 +17,6 @@ func (p *Page) save() error {
 }
 
 func loadPage(title string) (*Page, error) {
-	//fmt.Println("--- poop load page")
 	filename := title + ".txt"
 	body, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -28,8 +26,15 @@ func loadPage(title string) (*Page, error) {
 }
 
 func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
-	t, _ := template.ParseFiles(tmpl + ".html")
-	t.Execute(w, p)
+	t, err := template.ParseFiles(tmpl + ".html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	err = t.Execute(w, p)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +53,6 @@ func editHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("--- poop save page")
 	title := r.URL.Path[len("/save/"):]
 	body := r.FormValue("body")
 	p := &Page{Title: title, Body: []byte(body)}
