@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"html/template"
+	"errors"
 )
 
 type Page struct {
@@ -18,6 +19,10 @@ func (p *Page) save() error {
 }
 
 func loadPage(title string) (*Page, error) {
+	
+	if len(title) == 0 {
+		return nil, errors.New("Not defined")
+	}
 	filename := title + ".txt"
 	body, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -46,20 +51,25 @@ func viewHandler(w http.ResponseWriter, r *http.Request) {
     title := r.URL.Path[len("/view/"):]
     p, err := loadPage(title)
 	
-	if err != nil {
+	if err != nil && len(title) > 0 {
 		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
 		return
+	}else {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	
 	renderTemplate(w, "view", p)
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request) {
     title := r.URL.Path[len("/edit/"):]
     p, err := loadPage(title)
-    if err != nil {
+    if err != nil && len(title) > 0{
         p = &Page{Title: title}
-    }
+    } else {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	
 	renderTemplate(w, "edit", p)
 }
