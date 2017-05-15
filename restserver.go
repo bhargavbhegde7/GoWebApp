@@ -5,7 +5,7 @@ import (
     "log"
     "net/http"
 	"html/template"
-	"fmt"
+	//"fmt"
  
     "github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -21,8 +21,8 @@ type Person struct {
 }
 
 type User struct {
-    UserName string //exported field since it begins with a capital letter
-	Password string
+    UserName string 
+	//Password string
 }
  
 type Address struct {
@@ -100,8 +100,7 @@ func SessionHandler(w http.ResponseWriter, r *http.Request, username string) {
  
 func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
     username := req.FormValue("username")
-	passwd := req.FormValue("passwd")
-	fmt.Println(username+" -- "+passwd)
+	//passwd := req.FormValue("passwd")
 	
 	//check if the uname and password match
 	
@@ -126,14 +125,10 @@ func GetIndexEndpoint(w http.ResponseWriter, req *http.Request) {
 func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {    
 	
 	//TODO check if session is valid
+	//if not valid, then redirect to login
 	
-	params := mux.Vars(req)
-    /*var person Person
-    _ = json.NewDecoder(req.Body).Decode(&person)*/
-    var username = params["username"]
-	fmt.Println(username)
-	
-	//-----------------
+	params := mux.Vars(req)    
+	u := User{UserName:params["username"]}
 	
 	t, err := template.ParseFiles("home.html")
 
@@ -142,10 +137,6 @@ func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	u := User{UserName:username, Password:"abcd"} //define an instance with required field
- 
-    //t.Execute(os.Stdout, p) //merge template ‘t’ with content of ‘p’
-	
 	err = t.Execute(w, u)
 
 	if err != nil {
