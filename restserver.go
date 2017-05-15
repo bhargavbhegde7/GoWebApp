@@ -61,7 +61,7 @@ func DeletePersonEndpoint(w http.ResponseWriter, req *http.Request) {
  
 func GetLoginEndpoint(w http.ResponseWriter, req *http.Request) {
 
-	t, err := template.ParseFiles("home.html")
+	t, err := template.ParseFiles("login.html")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -79,14 +79,34 @@ func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
     username := req.FormValue("username")
 	passwd := req.FormValue("passwd")
 	fmt.Println(username+" -- "+passwd)
+	
+	//TODO send the user to "/home" with all these incoming data
 }
- 
+
+func GetIndexEndpoint(w http.ResponseWriter, req *http.Request) {
+    http.Redirect(w, req, "/home", http.StatusFound)
+		return 
+}
+
+func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
+    http.Redirect(w, req, "/home", http.StatusFound)
+		return 
+}
+
 func main() {
     router := mux.NewRouter()
     people = append(people, Person{ID: "1", Firstname: "Nic", Lastname: "Raboy", Address: &Address{City: "Dublin", State: "CA"}})
     people = append(people, Person{ID: "2", Firstname: "Maria", Lastname: "Raboy"})
+	
+	//TODO redirect all traffic at "/" to "/home" and at home handler check if session is set.
+	//if the session is set then send to "/home" otherwise send to "/login"
+	
+	router.HandleFunc("/", GetIndexEndpoint).Methods("GET")
+	router.HandleFunc("/home", GetHomeEndpoint).Methods("GET")
     router.HandleFunc("/login", GetLoginEndpoint).Methods("GET")
 	router.HandleFunc("/login", LoginEndpoint).Methods("POST")
+	router.HandleFunc("/signup", GetSignupEndpoint).Methods("GET")
+	router.HandleFunc("/signup", SignupEndpoint).Methods("POST")
 	router.HandleFunc("/people", GetPeopleEndpoint).Methods("GET")
     router.HandleFunc("/people/{id}", GetPersonEndpoint).Methods("GET")
     router.HandleFunc("/people/{id}", CreatePersonEndpoint).Methods("POST")
