@@ -4,6 +4,8 @@ import (
     "encoding/json"
     "log"
     "net/http"
+	"html/template"
+	"fmt"
  
     "github.com/gorilla/mux"
 )
@@ -36,7 +38,7 @@ func GetPersonEndpoint(w http.ResponseWriter, req *http.Request) {
 func GetPeopleEndpoint(w http.ResponseWriter, req *http.Request) {
     json.NewEncoder(w).Encode(people)
 }
- 
+
 func CreatePersonEndpoint(w http.ResponseWriter, req *http.Request) {
     params := mux.Vars(req)
     var person Person
@@ -57,11 +59,35 @@ func DeletePersonEndpoint(w http.ResponseWriter, req *http.Request) {
     json.NewEncoder(w).Encode(people)
 }
  
+func GetLoginEndpoint(w http.ResponseWriter, req *http.Request) {
+
+	t, err := template.ParseFiles("home.html")
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = t.Execute(w, nil)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+} 
+ 
+func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
+    username := req.FormValue("username")
+	passwd := req.FormValue("passwd")
+	fmt.Println(username+" -- "+passwd)
+}
+ 
 func main() {
     router := mux.NewRouter()
     people = append(people, Person{ID: "1", Firstname: "Nic", Lastname: "Raboy", Address: &Address{City: "Dublin", State: "CA"}})
     people = append(people, Person{ID: "2", Firstname: "Maria", Lastname: "Raboy"})
-    router.HandleFunc("/people", GetPeopleEndpoint).Methods("GET")
+    router.HandleFunc("/login", GetLoginEndpoint).Methods("GET")
+	router.HandleFunc("/login", LoginEndpoint).Methods("POST")
+	router.HandleFunc("/people", GetPeopleEndpoint).Methods("GET")
     router.HandleFunc("/people/{id}", GetPersonEndpoint).Methods("GET")
     router.HandleFunc("/people/{id}", CreatePersonEndpoint).Methods("POST")
     router.HandleFunc("/people/{id}", DeletePersonEndpoint).Methods("DELETE")
