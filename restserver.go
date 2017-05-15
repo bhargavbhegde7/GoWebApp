@@ -8,7 +8,10 @@ import (
 	"fmt"
  
     "github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 )
+
+var store = sessions.NewCookieStore([]byte("something-very-secret"))
  
 type Person struct {
     ID        string   `json:"id,omitempty"`
@@ -75,12 +78,39 @@ func GetLoginEndpoint(w http.ResponseWriter, req *http.Request) {
 	}
 } 
  
+func SessionHandler(w http.ResponseWriter, r *http.Request, username string) {
+    // Get a session. Get() always returns a session, even if empty.
+    session, err := store.Get(r, username)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    // Set some session values.
+    session.Values[username] = username
+    //session.Values[42] = 43
+    // Save it before we write to the response/return from the handler.
+    session.Save(r, w)
+}
+ 
 func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
     username := req.FormValue("username")
 	passwd := req.FormValue("passwd")
 	fmt.Println(username+" -- "+passwd)
 	
+	//check if the uname and password match
+	
+	
+	//check if session exists, get the session with uname
+	//start a new session if doesn't exist
+	SessionHandler(w, req, username)
+	
+	
+	
 	//TODO send the user to "/home" with all these incoming data
+	http.Redirect(w, req, "/home/"+username, http.StatusFound)
+		return
+	
 }
 
 func GetIndexEndpoint(w http.ResponseWriter, req *http.Request) {
@@ -88,9 +118,30 @@ func GetIndexEndpoint(w http.ResponseWriter, req *http.Request) {
 		return 
 }
 
-func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
-    http.Redirect(w, req, "/home", http.StatusFound)
-		return 
+func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {    
+	
+	//TODO check if session is valid
+	
+	params := mux.Vars(req)
+    /*var person Person
+    _ = json.NewDecoder(req.Body).Decode(&person)*/
+    var username = params["username"]
+	fmt.Println(username)
+	
+	//-----------------
+	
+	t, err := template.ParseFiles("home.html", nil)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = t.Execute(w, username)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func main() {
@@ -102,11 +153,11 @@ func main() {
 	//if the session is set then send to "/home" otherwise send to "/login"
 	
 	router.HandleFunc("/", GetIndexEndpoint).Methods("GET")
-	router.HandleFunc("/home", GetHomeEndpoint).Methods("GET")
+	router.HandleFunc("/home/{username}", GetHomeEndpoint).Methods("GET")
     router.HandleFunc("/login", GetLoginEndpoint).Methods("GET")
 	router.HandleFunc("/login", LoginEndpoint).Methods("POST")
-	router.HandleFunc("/signup", GetSignupEndpoint).Methods("GET")
-	router.HandleFunc("/signup", SignupEndpoint).Methods("POST")
+	//router.HandleFunc("/signup", GetSignupEndpoint).Methods("GET")
+	//router.HandleFunc("/signup", SignupEndpoint).Methods("POST")
 	router.HandleFunc("/people", GetPeopleEndpoint).Methods("GET")
     router.HandleFunc("/people/{id}", GetPersonEndpoint).Methods("GET")
     router.HandleFunc("/people/{id}", CreatePersonEndpoint).Methods("POST")
