@@ -19,6 +19,11 @@ type Person struct {
     Lastname  string   `json:"lastname,omitempty"`
     Address   *Address `json:"address,omitempty"`
 }
+
+type User struct {
+    UserName string //exported field since it begins with a capital letter
+	Password string
+}
  
 type Address struct {
     City  string `json:"city,omitempty"`
@@ -130,14 +135,18 @@ func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 	
 	//-----------------
 	
-	t, err := template.ParseFiles("home.html", nil)
+	t, err := template.ParseFiles("home.html")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = t.Execute(w, username)
+	u := User{UserName:username, Password:"abcd"} //define an instance with required field
+ 
+    //t.Execute(os.Stdout, p) //merge template ‘t’ with content of ‘p’
+	
+	err = t.Execute(w, u)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
