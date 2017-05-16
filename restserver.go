@@ -5,7 +5,7 @@ import (
     "log"
     "net/http"
 	"html/template"
-	//"fmt"
+	"fmt"
  
     "github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
@@ -23,6 +23,10 @@ type Person struct {
 type User struct {
     UserName string 
 	//Password string
+}
+
+type ErrorMessage struct {
+	Message string
 }
  
 type Address struct {
@@ -99,22 +103,41 @@ func SessionHandler(w http.ResponseWriter, r *http.Request, username string) {
 }
  
 func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
+
+	
+	//link for implementation here
+	// https://github.com/gorilla/sessions/issues/86
+	
     username := req.FormValue("username")
-	//passwd := req.FormValue("passwd")
+	passwd := req.FormValue("passwd")
 	
 	//check if the uname and password match
+	if username == "bhargav" && passwd == "bhargav"{
+		
+		//check if session exists, get the session with uname
+		//start a new session if doesn't exist
+		SessionHandler(w, req, username)
+		
+		//TODO send the user to "/home" with all these incoming data
+		http.Redirect(w, req, "/home/"+username, http.StatusFound)
+			return
+	}else{
 	
+		m := ErrorMessage{Message:"wrong credentials"}
 	
-	//check if session exists, get the session with uname
-	//start a new session if doesn't exist
-	SessionHandler(w, req, username)
-	
-	
-	
-	//TODO send the user to "/home" with all these incoming data
-	http.Redirect(w, req, "/home/"+username, http.StatusFound)
-		return
-	
+		t, err := template.ParseFiles("login.html")
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = t.Execute(w, m)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}	
+	}	
 }
 
 func GetIndexEndpoint(w http.ResponseWriter, req *http.Request) {
@@ -122,12 +145,22 @@ func GetIndexEndpoint(w http.ResponseWriter, req *http.Request) {
 		return 
 }
 
+func checklogin(w http.ResponseWriter,r *http.Request, username string){
+	fmt.Println(username)
+	_,exist := store.Get(r,username)
+	if exist==nil{
+		http.Redirect(w,r,"/login",http.StatusFound)
+	}
+}
+
 func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {    
+	
+	params := mux.Vars(req)
 	
 	//TODO check if session is valid
 	//if not valid, then redirect to login
-	
-	params := mux.Vars(req)    
+	checklogin(w, req, params["username"])	
+	    
 	u := User{UserName:params["username"]}
 	
 	t, err := template.ParseFiles("home.html")

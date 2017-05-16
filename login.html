@@ -2,17 +2,16 @@
 <html>
 <body>
 
+<p>{{.Message}}</p>
+
 <form action="http://localhost:12345/login" method="post">
   First name:<br>
-  <input type="text" name="username" value="Mickey">
+  <input type="text" name="username" >
   <br>
   Last name:<br>
-  <input type="text" name="passwd" value="Mouse">
+  <input type="password" name="passwd" >
   <br><br>
   <input type="submit" value="Submit">
 </form> 
-
-<p>If you click the "Submit" button, the form-data will be sent to a page called "/action_page.php".</p>
-
 </body>
 </html>
