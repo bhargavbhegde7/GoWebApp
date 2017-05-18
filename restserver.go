@@ -1,7 +1,6 @@
 package main
  
 import (
-    "encoding/json"
     "log"
     "net/http"
 	"html/template"
@@ -9,66 +8,21 @@ import (
  
     "github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/gorilla/securecookie"
 )
+
+var cookieHandler = securecookie.New(
+    securecookie.GenerateRandomKey(64),
+    securecookie.GenerateRandomKey(32))
 
 var store = sessions.NewCookieStore([]byte("something-very-secret"))
  
-type Person struct {
-    ID        string   `json:"id,omitempty"`
-    Firstname string   `json:"firstname,omitempty"`
-    Lastname  string   `json:"lastname,omitempty"`
-    Address   *Address `json:"address,omitempty"`
-}
-
 type User struct {
     UserName string 
-	//Password string
 }
 
 type ErrorMessage struct {
 	Message string
-}
- 
-type Address struct {
-    City  string `json:"city,omitempty"`
-    State string `json:"state,omitempty"`
-}
- 
-var people []Person
- 
-func GetPersonEndpoint(w http.ResponseWriter, req *http.Request) {
-    params := mux.Vars(req)
-    for _, item := range people {
-        if item.ID == params["id"] {
-            json.NewEncoder(w).Encode(item)
-            return
-        }
-    }
-    json.NewEncoder(w).Encode(&Person{})
-}
- 
-func GetPeopleEndpoint(w http.ResponseWriter, req *http.Request) {
-    json.NewEncoder(w).Encode(people)
-}
-
-func CreatePersonEndpoint(w http.ResponseWriter, req *http.Request) {
-    params := mux.Vars(req)
-    var person Person
-    _ = json.NewDecoder(req.Body).Decode(&person)
-    person.ID = params["id"]
-    people = append(people, person)
-    json.NewEncoder(w).Encode(people)
-}
- 
-func DeletePersonEndpoint(w http.ResponseWriter, req *http.Request) {
-    params := mux.Vars(req)
-    for index, item := range people {
-        if item.ID == params["id"] {
-            people = append(people[:index], people[index+1:]...)
-            break
-        }
-    }
-    json.NewEncoder(w).Encode(people)
 }
  
 func GetLoginEndpoint(w http.ResponseWriter, req *http.Request) {
@@ -87,27 +41,27 @@ func GetLoginEndpoint(w http.ResponseWriter, req *http.Request) {
 	}
 } 
  
-func SessionHandler(w http.ResponseWriter, r *http.Request, username string) {
-    // Get a session. Get() always returns a session, even if empty.
-    session, err := store.Get(r, username)
-    if err != nil {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
-        return
+func setSession(username string, response http.ResponseWriter) {
+    value := map[string]string{
+        "username": username,
     }
-
-    // Set some session values.
-    session.Values[username] = username
-    //session.Values[42] = 43
-    // Save it before we write to the response/return from the handler.
-    session.Save(r, w)
+    if encoded, err := cookieHandler.Encode("session", value); err == nil {
+        cookie := &http.Cookie{
+            Name:  "session",
+            Value: encoded,
+            Path:  "/",
+        }
+        http.SetCookie(response, cookie)
+    }
 }
- 
+
+//this blog right here made it work. 
+//don't understand the code fully
+//	https://mschoebel.info/2014/03/09/snippet-golang-webapp-login-logout/
+
+
 func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
 
-	
-	//link for implementation here
-	// https://github.com/gorilla/sessions/issues/86
-	
     username := req.FormValue("username")
 	passwd := req.FormValue("passwd")
 	
@@ -116,10 +70,10 @@ func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
 		
 		//check if session exists, get the session with uname
 		//start a new session if doesn't exist
-		SessionHandler(w, req, username)
+		setSession(username, w)
 		
 		//TODO send the user to "/home" with all these incoming data
-		http.Redirect(w, req, "/home/"+username, http.StatusFound)
+		http.Redirect(w, req, "/home", http.StatusFound)
 			return
 	}else{
 	
@@ -140,60 +94,75 @@ func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
 	}	
 }
 
+func clearSession(response http.ResponseWriter) {
+    cookie := &http.Cookie{
+        Name:   "session",
+        Value:  "",
+        Path:   "/",
+        MaxAge: -1,
+    }
+    http.SetCookie(response, cookie)
+}
+
+func LogoutHandler(response http.ResponseWriter, request *http.Request) {
+    clearSession(response)
+    http.Redirect(response, request, "/", 302)
+}
+
 func GetIndexEndpoint(w http.ResponseWriter, req *http.Request) {
-    http.Redirect(w, req, "/home", http.StatusFound)
+    fmt.Println("inside index handler")
+	http.Redirect(w, req, "/home", http.StatusFound)
 		return 
 }
 
-func checklogin(w http.ResponseWriter,r *http.Request, username string){
-	fmt.Println(username)
-	_,exist := store.Get(r,username)
-	if exist==nil{
-		http.Redirect(w,r,"/login",http.StatusFound)
-	}
+func getUserName(request *http.Request) (username string) {
+    if cookie, err := request.Cookie("session"); err == nil {
+        cookieValue := make(map[string]string)
+        if err = cookieHandler.Decode("session", cookie.Value, &cookieValue); err == nil {
+            username = cookieValue["username"]
+        }
+    }
+    return username
 }
 
-func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {    
-	
-	params := mux.Vars(req)
-	
-	//TODO check if session is valid
-	//if not valid, then redirect to login
-	checklogin(w, req, params["username"])	
-	    
-	u := User{UserName:params["username"]}
-	
-	t, err := template.ParseFiles("home.html")
+func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	fmt.Println("inside home handler")
+	
+	username := getUserName(req)
+    if username != "" {
+		fmt.Println("username exists")
+			
+		u := User{UserName:username}
+		
+		t, err := template.ParseFiles("home.html")
 
-	err = t.Execute(w, u)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+		err = t.Execute(w, u)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	} else {
+		fmt.Println("username doesn't exist")
+        http.Redirect(w, req, "/login", 302)
+    }
 }
 
 func main() {
-    router := mux.NewRouter()
-    people = append(people, Person{ID: "1", Firstname: "Nic", Lastname: "Raboy", Address: &Address{City: "Dublin", State: "CA"}})
-    people = append(people, Person{ID: "2", Firstname: "Maria", Lastname: "Raboy"})
-	
-	//TODO redirect all traffic at "/" to "/home" and at home handler check if session is set.
-	//if the session is set then send to "/home" otherwise send to "/login"
+    router := mux.NewRouter()    
 	
 	router.HandleFunc("/", GetIndexEndpoint).Methods("GET")
-	router.HandleFunc("/home/{username}", GetHomeEndpoint).Methods("GET")
+	router.HandleFunc("/home", GetHomeEndpoint).Methods("GET")
     router.HandleFunc("/login", GetLoginEndpoint).Methods("GET")
 	router.HandleFunc("/login", LoginEndpoint).Methods("POST")
+	router.HandleFunc("/logout", LogoutHandler).Methods("GET")
 	//router.HandleFunc("/signup", GetSignupEndpoint).Methods("GET")
 	//router.HandleFunc("/signup", SignupEndpoint).Methods("POST")
-	router.HandleFunc("/people", GetPeopleEndpoint).Methods("GET")
-    router.HandleFunc("/people/{id}", GetPersonEndpoint).Methods("GET")
-    router.HandleFunc("/people/{id}", CreatePersonEndpoint).Methods("POST")
-    router.HandleFunc("/people/{id}", DeletePersonEndpoint).Methods("DELETE")
+	
     log.Fatal(http.ListenAndServe(":12345", router))
 }
