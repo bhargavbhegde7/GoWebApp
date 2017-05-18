@@ -75,6 +75,15 @@ func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
 		//TODO send the user to "/home" with all these incoming data
 		http.Redirect(w, req, "/home", http.StatusFound)
 			return
+	}else if username == "bhargav2" && passwd == "bhargav2"{
+		
+		//check if session exists, get the session with uname
+		//start a new session if doesn't exist
+		setSession(username, w)
+		
+		//TODO send the user to "/home" with all these incoming data
+		http.Redirect(w, req, "/home", http.StatusFound)
+			return
 	}else{
 	
 		m := ErrorMessage{Message:"wrong credentials"}
