@@ -9,6 +9,12 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
+
+	//"time"
+	//"crypto/md5"
+	"io"
+	//"strconv"
+	"os"
 )
 
 var cookieHandler = securecookie.New(
@@ -19,6 +25,10 @@ var store = sessions.NewCookieStore([]byte("something-very-secret"))
 
 type User struct {
 	UserName string
+}
+
+type Image struct{
+	Path string
 }
 
 type ErrorMessage struct {
@@ -105,9 +115,6 @@ func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
 		//check if session exists, get the session with uname
 		//start a new session if doesn't exist
 
-		//TODO or not to do??
-		//clearSession(w)
-		
 		setSession(username, w)
 
 		//TODO send the user to "/home" with all these incoming data
@@ -206,7 +213,7 @@ func getUserName(request *http.Request) (username string) {
 	return username
 }
 
-//GetHomeEndpoint this is to trick the ide to think there is a sensible comment here. I don't write comments at all. I am a dick
+//GetHomeEndpoint . . .
 func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	fmt.Println("inside home handler")
@@ -215,7 +222,8 @@ func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 	if username != "" {
 		fmt.Println("username exists")
 
-		u := User{UserName: username}
+		//u := User{UserName: username}
+		//u := User{UserName: "./images/blur-photos-26354-27045-hd-wallpapers.jpg"}
 
 		t, err := template.ParseFiles("home.html")
 
@@ -224,7 +232,10 @@ func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		err = t.Execute(w, u)
+		err = t.Execute(w, struct{
+			UserStr User
+			Path string
+		}{UserStr:User{UserName:username},Path:"./images/blur-photos-26354-27045-hd-wallpapers.jpg"})
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -233,6 +244,28 @@ func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 		fmt.Println("username doesn't exist")
 		http.Redirect(w, req, "/login", 302)
 	}
+}
+
+func UploadEndpoint(w http.ResponseWriter, r *http.Request) {
+
+	r.ParseMultipartForm(32 << 20)
+	file, handler, err := r.FormFile("uploadfile")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	http.Redirect(w, r, "/home", http.StatusFound)
+
+	f, err := os.OpenFile("./images/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer f.Close()
+	io.Copy(f, file)
+
 }
 
 func main() {
@@ -245,6 +278,10 @@ func main() {
 	router.HandleFunc("/logout", LogoutHandler).Methods("GET")
 	router.HandleFunc("/signup", GetSignupEndpoint).Methods("GET")
 	router.HandleFunc("/signup", SignupEndpoint).Methods("POST")
+	router.HandleFunc("/upload", UploadEndpoint).Methods("POST")
+
+	router.Handle("/images/{img-path}",
+    http.StripPrefix("/images/", http.FileServer(http.Dir("./" + "images/"))))
 
 	log.Fatal(http.ListenAndServe(":12345", router))
 }
