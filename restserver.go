@@ -310,6 +310,8 @@ func getImageMaps(path string) map[int]string{
   return m
 }
 
+//TODO in the home page display delete and view. display edit/delete only if it's the logged in user
+
 func main() {
 	router := mux.NewRouter()
 
