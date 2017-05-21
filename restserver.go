@@ -10,11 +10,10 @@ import (
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 
-	//"time"
-	//"crypto/md5"
 	"io"
-	//"strconv"
 	"os"
+	"bufio"
+	"strings"
 )
 
 var cookieHandler = securecookie.New(
@@ -222,9 +221,6 @@ func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 	if username != "" {
 		fmt.Println("username exists")
 
-		//u := User{UserName: username}
-		//u := User{UserName: "./images/blur-photos-26354-27045-hd-wallpapers.jpg"}
-
 		t, err := template.ParseFiles("home.html")
 
 		if err != nil {
@@ -234,8 +230,8 @@ func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 
 		err = t.Execute(w, struct{
 			UserStr User
-			Path string
-		}{UserStr:User{UserName:username},Path:"./images/blur-photos-26354-27045-hd-wallpapers.jpg"})
+			Paths map[int]string
+		}{UserStr:User{UserName:username},Paths:getImageMaps("./images/uploaders.txt")})
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -248,24 +244,70 @@ func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 
 func UploadEndpoint(w http.ResponseWriter, r *http.Request) {
 
-	r.ParseMultipartForm(32 << 20)
-	file, handler, err := r.FormFile("uploadfile")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	username := getUserName(r)
+	if username != "" {
+		r.ParseMultipartForm(32 << 20)
+		file, handler, err := r.FormFile("uploadfile")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer file.Close()
+
+		http.Redirect(w, r, "/home", http.StatusFound)
+
+		f, err := os.OpenFile("./images/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+		io.Copy(f, file)
+
+		AppendStringToFile("./images/uploaders.txt", username+" > "+"./images/"+handler.Filename)
+
+	}else {
+		fmt.Println("username doesn't exist")
+		http.Redirect(w, r, "/login", 302)
 	}
-	defer file.Close()
+}
 
-	http.Redirect(w, r, "/home", http.StatusFound)
+func AppendStringToFile(path, text string) error {
+      f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+      if err != nil {
+              return err
+      }
+      defer f.Close()
 
-	f, err := os.OpenFile("./images/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer f.Close()
-	io.Copy(f, file)
+      _, err = f.WriteString(text+"\n")
+      if err != nil {
+              return err
+      }
+      return nil
+}
 
+func getImageMaps(path string) map[int]string{
+
+  m := make(map[int]string)
+
+  file, err := os.Open(path)
+  if err != nil {
+      log.Fatal(err)
+  }
+  defer file.Close()
+
+  scanner := bufio.NewScanner(file)
+  i := 0
+  for scanner.Scan() {
+      m[i] = strings.TrimSpace(strings.Split(scanner.Text(), ">")[1])
+      i++
+  }
+
+  if err := scanner.Err(); err != nil {
+      log.Fatal(err)
+  }
+
+  return m
 }
 
 func main() {
