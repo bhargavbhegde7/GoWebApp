@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"html/template"
+	"template"
 	"log"
 	"net/http"
 
@@ -45,7 +45,7 @@ func GetLoginEndpoint(w http.ResponseWriter, req *http.Request) {
 		m = ErrorMessage{"Already logged in as " + username}
 	}
 
-	t, err := template.ParseFiles("login.html")
+	t, err := template.ParseFiles("./static/login.html")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -70,7 +70,7 @@ func GetSignupEndpoint(w http.ResponseWriter, req *http.Request) {
 		m = ErrorMessage{"Already logged in as " + username}
 	}
 
-	t, err := template.ParseFiles("signup.html")
+	t, err := template.ParseFiles("./static/signup.html")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -132,7 +132,7 @@ func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
 
 		m := ErrorMessage{Message: "wrong credentials"}
 
-		t, err := template.ParseFiles("login.html")
+		t, err := template.ParseFiles("./static/login.html")
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -165,7 +165,7 @@ func SignupEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	m = ErrorMessage{Message: "error : enter proper username and password"}
 
-	t, err := template.ParseFiles("signup.html")
+	t, err := template.ParseFiles("./static/signup.html")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -221,7 +221,7 @@ func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 	if username != "" {
 		fmt.Println("username exists")
 
-		t, err := template.ParseFiles("home.html")
+		t, err := template.ParseFiles("./static/home.html")
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -323,6 +323,10 @@ func main() {
 	router.HandleFunc("/signup", GetSignupEndpoint).Methods("GET")
 	router.HandleFunc("/signup", SignupEndpoint).Methods("POST")
 	router.HandleFunc("/upload", UploadEndpoint).Methods("POST")
+
+	router.HandleFunc("/trymsg", MessageEndPoint).Methods("POST")
+	router.HandleFunc("/trymsg2", MessageEndPoint2).Methods("POST")
+	router.HandleFunc("/upload_keys", ReceivePublicKeyFile).Methods("POST")
 
 	router.Handle("/images/{img-path}",
     http.StripPrefix("/images/", http.FileServer(http.Dir("./" + "images/"))))
