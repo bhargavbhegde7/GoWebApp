@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <!-- Basic Page Needs
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta charset="utf-8">
+  <title>Your page title here :)</title>
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <!-- Mobile Specific Metas
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- FONT
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <!-- <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css"> -->
+  <link href="/static/css/font.css" rel="stylesheet" type="text/css">
+  
+  <!-- CSS
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="stylesheet" href="/static/css/normalize.css">
+  <link rel="stylesheet" href="/static/css/skeleton.css">
+  <link rel="stylesheet" href="/static/css/custom.css">
+
+  <!-- Favicon
+  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
+  <link rel="icon" type="image/png" href="/static/images/favicon.png">
+
+  <!-- development version, includes helpful console warnings -->
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+</head>
+<body>
+  <p>{{.Message}}</p>
+  <div class="container">
+    
+	<div id="entryApp">
+		<div>
+			<form action="http://localhost:12345/login" method="post" style="margin-top: 25%" v-bind:class="{'is-hidden' : hideLoginForm }">
+			  <div class="sixteen columns">
+				  <div class="row">
+					<div class="six columns offset-by-two">
+					  <label for="login_emailInput">Your email</label>
+					  <input class="u-full-width" type="text" name="username" value="bhargav" id="login_emailInput">
+					</div>
+				  </div>
+				  <div class="row">
+					<div class="six columns offset-by-two">
+					  <label for="login_passwordInput">Your password</label>
+					  <input class="u-full-width" type="password" name="passwd" value="bhargav" id="login_passwordInput">
+					</div>
+				  </div>
+				  <div class="row">
+					  <div class="six columns offset-by-two">
+						  <input class="button-primary" type="submit" value="Submit">
+						  <a class="button" v-on:click="toggleForms">Signup</a>
+					  </div>
+				  </div>
+			  </div>
+			</form>
+		</div>
+		
+		<div>
+			<form action="http://localhost:12345/signup" method="post" style="margin-top: 25%" v-bind:class="{'is-hidden' : hideSignupForm }">
+			  <div class="sixteen columns">
+				  <div class="row">
+					<div class="six columns offset-by-two">
+					  <label for="signup_emailInput">Your email</label>
+					  <input class="u-full-width" type="text" name="username" value="bhargav" id="signup_emailInput">
+					</div>
+				  </div>
+				  <div class="row">
+					<div class="six columns offset-by-two">
+					  <label for="signup_passwordInput">Your password</label>
+					  <input class="u-full-width" type="password" name="passwd1" value="bhargav" id="signup_passwordInput">
+					</div>
+				  </div>
+				  <div class="row">
+					<div class="six columns offset-by-two">
+					  <label for="signup_passwordConfirm">Confirm password</label>
+					  <input class="u-full-width" type="password" name="passwd2" value="bhargav" id="signup_passwordConfirm">
+					</div>
+				  </div>
+				  <div class="row">
+					<div class="six columns offset-by-two">
+					  <input class="button-primary" type="submit" value="Submit">
+					  <a class="button" v-on:click="toggleForms">Login</a>
+					</div>
+				  </div>
+			  </div>
+			</form>
+		</div>
+	</div>
+
+  </div>
+
+  <script>
+    var app = new Vue({
+	
+		el: "#entryApp",
+		delimiters: ['${', '}'],
+		data: {
+			hideLoginForm: false,
+			hideSignupForm: true
+		},
+		methods:{
+			toggleForms: function(){
+				this.hideLoginForm = !(this.hideLoginForm);
+				this.hideSignupForm = !(this.hideSignupForm);
+			}
+		}
+	}); 
+  </script>
+</body>
+</html>

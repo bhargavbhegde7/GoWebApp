@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"template"
+	"text/template"
 	"log"
 	"net/http"
 
@@ -45,7 +45,7 @@ func GetLoginEndpoint(w http.ResponseWriter, req *http.Request) {
 		m = ErrorMessage{"Already logged in as " + username}
 	}
 
-	t, err := template.ParseFiles("./static/login.html")
+	t, err := template.ParseFiles("./static/entry.html")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -60,6 +60,7 @@ func GetLoginEndpoint(w http.ResponseWriter, req *http.Request) {
 }
 
 //GetSignupEndpoint . . .
+/*
 func GetSignupEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	m := ErrorMessage{}
@@ -83,6 +84,7 @@ func GetSignupEndpoint(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+*/
 
 func setSession(username string, response http.ResponseWriter) {
 	value := map[string]string{
@@ -132,7 +134,7 @@ func LoginEndpoint(w http.ResponseWriter, req *http.Request) {
 
 		m := ErrorMessage{Message: "wrong credentials"}
 
-		t, err := template.ParseFiles("./static/login.html")
+		t, err := template.ParseFiles("./static/entry.html")
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -231,14 +233,14 @@ func GetHomeEndpoint(w http.ResponseWriter, req *http.Request) {
 		err = t.Execute(w, struct{
 			UserStr User
 			Paths map[int]string
-		}{UserStr:User{UserName:username},Paths:getImageMaps("./images/uploaders.txt")})
+		}{UserStr:User{UserName:username},Paths:getImageMaps("./static/images/uploaders.txt")})
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	} else {
 		fmt.Println("username doesn't exist")
-		http.Redirect(w, req, "/login", 302)
+		http.Redirect(w, req, "/entry", 302)
 	}
 }
 
@@ -256,7 +258,7 @@ func UploadEndpoint(w http.ResponseWriter, r *http.Request) {
 
 		http.Redirect(w, r, "/home", http.StatusFound)
 
-		f, err := os.OpenFile("./images/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+		f, err := os.OpenFile("./static/images/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -264,11 +266,11 @@ func UploadEndpoint(w http.ResponseWriter, r *http.Request) {
 		defer f.Close()
 		io.Copy(f, file)
 
-		AppendStringToFile("./images/uploaders.txt", username+" > "+"./images/"+handler.Filename)
+		AppendStringToFile("./static/images/uploaders.txt", username+" > "+"./static/images/"+handler.Filename+"\n")
 
 	}else {
 		fmt.Println("username doesn't exist")
-		http.Redirect(w, r, "/login", 302)
+		http.Redirect(w, r, "/entry", 302)
 	}
 }
 
@@ -317,10 +319,9 @@ func main() {
 
 	router.HandleFunc("/", GetIndexEndpoint).Methods("GET")
 	router.HandleFunc("/home", GetHomeEndpoint).Methods("GET")
-	router.HandleFunc("/login", GetLoginEndpoint).Methods("GET")
+	router.HandleFunc("/entry", GetLoginEndpoint).Methods("GET")
 	router.HandleFunc("/login", LoginEndpoint).Methods("POST")
 	router.HandleFunc("/logout", LogoutHandler).Methods("GET")
-	router.HandleFunc("/signup", GetSignupEndpoint).Methods("GET")
 	router.HandleFunc("/signup", SignupEndpoint).Methods("POST")
 	router.HandleFunc("/upload", UploadEndpoint).Methods("POST")
 
@@ -328,8 +329,11 @@ func main() {
 	router.HandleFunc("/trymsg2", MessageEndPoint2).Methods("POST")
 	router.HandleFunc("/upload_keys", ReceivePublicKeyFile).Methods("POST")
 
-	router.Handle("/images/{img-path}",
-    http.StripPrefix("/images/", http.FileServer(http.Dir("./" + "images/"))))
-
-	log.Fatal(http.ListenAndServe(":12345", router))
+	//router.Handle("/images/{img-path}",http.StripPrefix("/images/", http.FileServer(http.Dir("./" + "images/"))))
+	
+	s := http.StripPrefix("/static/", http.FileServer(http.Dir("./static/")))
+    router.PathPrefix("/static/").Handler(s)
+    http.Handle("/", router)
+	
+    http.ListenAndServe(":12345", nil)
 }
