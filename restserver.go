@@ -167,7 +167,7 @@ func SignupEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	m = ErrorMessage{Message: "error : enter proper username and password"}
 
-	t, err := template.ParseFiles("./static/signup.html")
+	t, err := template.ParseFiles("./static/entry.html")
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
