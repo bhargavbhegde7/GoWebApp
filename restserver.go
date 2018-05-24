@@ -180,6 +180,38 @@ func SignupEndpoint(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
+/*
+func SignupEndpoint(w http.ResponseWriter, req *http.Request) {
+
+	var m ErrorMessage
+
+	username := req.FormValue("username")
+	passwd1 := req.FormValue("passwd1")
+	passwd2 := req.FormValue("passwd2")
+
+	//TODO create a validation method
+	if username != "" && passwd1 != "" && passwd1 == passwd2 {
+		fmt.Println("username : " + username + " , password : " + passwd1)
+		http.Redirect(w, req, "/home", http.StatusFound)
+		return
+	}
+
+	m = ErrorMessage{Message: "error : enter proper username and password"}
+
+	t, err := template.ParseFiles("./static/entry.html")
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = t.Execute(w, m)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+*/
 
 func clearSession(response http.ResponseWriter) {
 	cookie := &http.Cookie{
