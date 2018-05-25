@@ -1,23 +1,7 @@
 <!DOCTYPE html>
 <html>
 <body>
-
-<p>Welcome, {{.UserStr.UserName}}!</p>
-
-<!-- ///////////////////////////////////////////////////////////////////// -->
-
-{{ range $key, $value := .Paths }}
-   <li><strong>{{ $key }}</strong>: {{ $value }}</li>
-   <img id="{{$key}}" src="{{$value}}" height="100"></img>
-{{ end }}
-
-<!-- ///////////////////////////////////////////////////////////////////// -->
-
-<form enctype="multipart/form-data" action="http://localhost:12345/upload" method="post">
-    <input type="file" name="uploadfile" />
-    <input type="submit" value="upload" />
-</form>
-
-<a href="http://localhost:12345/logout">logout</a>
+	<p>Welcome, {{.Message}}!</p>
+	<a href="http://localhost:9000/logout">logout</a>
 </body>
 </html>
